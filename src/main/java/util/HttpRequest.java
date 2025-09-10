@@ -21,8 +21,6 @@ public class HttpRequest {
             throw new IOException("Favicon 요청 무시하기");
         }
 
-        fullHttpRequest.append(url).append("\n");
-
         String httpLines;
         while((httpLines = reader.readLine()) != null) {
             if(httpLines.isEmpty()) {
