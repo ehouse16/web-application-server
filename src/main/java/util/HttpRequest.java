@@ -1,5 +1,9 @@
 package util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import webserver.WebServer;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -10,6 +14,8 @@ public class HttpRequest {
     String url;
     String body;
     Map<String, String> headers = new HashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);
+
 
     public HttpRequest(BufferedReader reader) throws IOException{
         // 1. 요청 라인 파싱 ("GET /index.html HTTP/1.1")
@@ -19,11 +25,15 @@ public class HttpRequest {
         }
 
         String[] header = line.split(" ");
+
+        if(header.length < 2){
+            log.debug("Headers 2개보다 적음");
+        }
         this.method = header[0]; // method 저장
         this.url = header[1]; // URL 저장
 
         if("/favicon.ico".equals(url)) {
-            throw new IOException("Favicon 요청 무시하기");
+            log.debug("Favicon 요청 무시하기");
         }
 
         // Header 파싱
