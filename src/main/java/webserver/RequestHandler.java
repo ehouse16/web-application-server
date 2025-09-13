@@ -1,14 +1,17 @@
 package webserver;
 
+import model.Database;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequest;
+import util.HttpRequestUtils;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.util.Map;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -69,13 +72,36 @@ public class RequestHandler extends Thread {
 
         if(url.startsWith("/user/create")) {
             User user = UserRequestParser.parserFromBody(request.getBody());
+
+            //회원가입 하면 유저 추가하기
+            Database.addUser(user);
+
             log.debug("New User Created : {}", user);
 
             response302Header(dos, "/index.html");
-        } else{
+        }
+        //로그인으로 넘어갈 때
+        else if(url.startsWith("/user/login")) {
+            Map<String, String> params = UserRequestParser.getParams(request.getBody());
+
+            User user = Database.getUser(params.get("userId"));
+
+            if(user == null){
+                log.debug("User not found : {}", params.get("userId"));
+                response302HeaderWithCookie(dos, "/user/login_failed.html", "logined=false");
+            }else if(user.getPassword().equals(params.get("password"))){
+                log.debug("Login Success");
+                response302HeaderWithCookie(dos, "/index.html", "logined=true");
+            }else{
+                log.debug("Wrong password : {}", params.get("password"));
+                response302HeaderWithCookie(dos, "/user/login_failed.html", "logined=false");
+            }
+        }
+        else{
             log.info(request.getMethod() + " not supported");
             responseBody(dos, "Not Found".getBytes());
         }
+
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String url){
@@ -123,6 +149,17 @@ public class RequestHandler extends Thread {
         try {
             dos.writeBytes("HTTP/1.1 302 Found \r\n");
             dos.writeBytes("Location: " + location + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302HeaderWithCookie(DataOutputStream dos, String location, String cookie) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found \r\n");
+            dos.writeBytes("Location: " + location + "\r\n");
+            dos.writeBytes("Set-Cookie: " + cookie + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());

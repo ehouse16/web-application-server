@@ -44,4 +44,8 @@ public class UserRequestParser {
     private static String decode(String value) {
         return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
+
+    public static Map<String, String> getParams(String body){
+        return HttpRequestUtils.parseQueryString(body);
+    }
 }
