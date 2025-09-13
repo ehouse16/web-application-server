@@ -31,34 +31,50 @@ public class RequestHandler extends Thread {
 
             // 1. 요청 파싱
             HttpRequest request = new HttpRequest(bf);
-            String url = request.getUrl();
 
-            // 2. 동적 요청 처리
-            if(url.startsWith("/user/create")) {
-                User user = UserRequestParser.parser(url);
-                log.debug("New User Created : {}", user);
-
-                response302Header(dos, "/index.html");
-                return;
-            }
-
-            // 3. 동적 요청 처리
-            if(url.equals("/"))
-                url = "/index.html";
-
-            try{
-                File file = new File("./webapp" + url);
-                byte[] bytes = Files.readAllBytes(file.toPath());
-
-                response200Header(dos, bytes.length, url);
-                responseBody(dos, bytes);
-            } catch(NoSuchFileException e) {
-                log.warn(e.getMessage());
-                response404Header(dos, e.getMessage().getBytes().length);
-                responseBody(dos, e.getMessage().getBytes());
+            // 2. HTTP method에 따라 분기
+            if("GET".equals(request.getMethod())){
+                doGet(request, dos);
+            } else if("POST".equals(request.getMethod())){
+                doPost(request, dos);
+            } else{
+                log.info(request.getMethod() + " not supported");
             }
         } catch (IOException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void doGet(HttpRequest request, DataOutputStream dos) throws IOException {
+        String url = request.getUrl();
+
+        if(url.equals("/"))
+            url = "/index.html";
+
+        try{
+            File file = new File("./webapp" + url);
+            byte[] bytes = Files.readAllBytes(file.toPath());
+
+            response200Header(dos, bytes.length, url);
+            responseBody(dos, bytes);
+        } catch(NoSuchFileException e) {
+            log.warn(e.getMessage());
+            response404Header(dos, e.getMessage().getBytes().length);
+            responseBody(dos, e.getMessage().getBytes());
+        }
+    }
+
+    private void doPost(HttpRequest request, DataOutputStream dos) throws IOException {
+        String url = request.getUrl();
+
+        if(url.startsWith("/user/create")) {
+            User user = UserRequestParser.parserFromBody(request.getBody());
+            log.debug("New User Created : {}", user);
+
+            response302Header(dos, "/index.html");
+        } else{
+            log.info(request.getMethod() + " not supported");
+            responseBody(dos, "Not Found".getBytes());
         }
     }
 
