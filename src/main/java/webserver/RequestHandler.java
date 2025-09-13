@@ -5,7 +5,6 @@ import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequest;
-import util.HttpRequestUtils;
 
 import java.io.*;
 import java.net.Socket;
@@ -37,7 +36,11 @@ public class RequestHandler extends Thread {
 
             // 2. HTTP method에 따라 분기
             if("GET".equals(request.getMethod())){
-                doGet(request, dos);
+                if(request.getUrl().equals("/user/list")){
+                    handleUserList(request, dos);
+                }else {
+                    doGet(request, dos);
+                }
             } else if("POST".equals(request.getMethod())){
                 doPost(request, dos);
             } else{
@@ -163,6 +166,38 @@ public class RequestHandler extends Thread {
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void handleUserList(HttpRequest request, DataOutputStream dos) throws IOException {
+        Map<String, String> cookies = request.getCookies();
+        String logined = cookies.get("logined");
+
+        log.info("로그인 여부 {} ", logined);
+
+        if ("true".equals(logined)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("<html><body>");
+            sb.append("<h1>User List</h1>");
+            sb.append("<table border='1'>");
+            sb.append("<tr><th>UserId</th><th>Name</th><th>Email</th></tr>");
+
+            for (User user : Database.findAll()) {
+                sb.append("<tr>")
+                        .append("<td>").append(user.getUserId()).append("</td>")
+                        .append("<td>").append(user.getName()).append("</td>")
+                        .append("<td>").append(user.getEmail()).append("</td>")
+                        .append("</tr>");
+            }
+
+            sb.append("</table>");
+            sb.append("</body></html>");
+
+            byte[] body = sb.toString().getBytes();
+            response200Header(dos, body.length, request.getUrl());
+            responseBody(dos, body);
+        } else {
+            response302Header(dos, "/user/login.html");
         }
     }
 }

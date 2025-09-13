@@ -1,5 +1,6 @@
 package model;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,5 +13,9 @@ public class Database {
 
     public static User getUser(String userId){
         return users.get(userId);
+    }
+
+    public static Collection<User> findAll() {
+        return users.values();
     }
 }

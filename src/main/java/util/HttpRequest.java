@@ -57,4 +57,10 @@ public class HttpRequest {
     public String getBody(){
         return body;
     }
+
+    public Map<String, String> getCookies(){
+        String cookieHeader = headers.get("Cookie");
+
+        return HttpRequestUtils.parseCookies(cookieHeader);
+    }
 }
